@@ -33,76 +33,73 @@ func main() {
 	fmt.Println("part2", part2(f))
 }
 
-func createNodeGrid(f []byte) [][]*node {
+func createNodeGrid(f []byte) [][]node {
 	lines := strings.Split(strings.TrimSpace(string(f)), "\n")
 
 	height := len(lines)
 	width := len(lines[0])
 
-	grid := make([][]*node, height)
+	grid := make([][]node, height+1)
+	grid[0] = make([]node, width+2)
 
-	for i, v := range lines {
-		grid[i] = make([]*node, width)
+	for i := 1; i < len(grid); i++ {
+		grid[i] = make([]node, width+2)
 
-		for j, c := range v {
+		for j := 1; j < len(grid[0])-1; j++ {
+			c := rune(lines[i-1][j-1])
 			var n node
 			n.value = valueMap[c]
-			grid[i][j] = &n
+			grid[i][j] = n
 		}
+
 	}
+	grid = append(grid, make([]node, width+2))
+
+	linkNodes(grid)
 
 	return grid
 }
 
-func linkAndCalcNodeGrid(grid [][]*node, rm bool) int {
+func linkNodes(grid [][]node) {
+	for r := 1; r < len(grid)-1; r++ {
+		for c := 1; c < len(grid[0])-1; c++ {
+			n := &grid[r][c]
+
+			n.up = &grid[r-1][c]
+			n.upleft = &grid[r-1][c-1]
+			n.upright = &grid[r-1][c+1]
+			n.down = &grid[r+1][c]
+			n.downleft = &grid[r+1][c-1]
+			n.downright = &grid[r+1][c+1]
+			n.left = &grid[r][c-1]
+			n.right = &grid[r][c+1]
+
+		}
+	}
+}
+
+func checkValidNodes(grid [][]node, rm bool) int {
 	validNodes := 0
+
 	height := len(grid)
 	width := len(grid[0])
-
-	for r := range height {
-		for c := range width {
-			score := 0
-			n := grid[r][c]
-
+	for r := 1; r < height-1; r++ {
+		for c := 1; c < width-1; c++ {
+			n := &grid[r][c]
 			if n.value == 0 {
 				continue
 			}
 
-			if r > 0 {
-				n.up = grid[r-1][c]
-				score += n.up.value
-				if c > 0 {
-					n.upleft = grid[r-1][c-1]
-					score += n.upleft.value
-				}
-				if c < width-1 {
-					n.upright = grid[r-1][c+1]
-					score += n.upright.value
-				}
-			}
+			score := 0
 
-			if r < height-1 {
-				n.down = grid[r+1][c]
-				score += n.down.value
-				if c > 0 {
-					n.downleft = grid[r+1][c-1]
-					score += n.downleft.value
-				}
-				if c < width-1 {
-					n.downright = grid[r+1][c+1]
-					score += n.downright.value
-				}
-			}
-
-			if c > 0 {
-				n.left = grid[r][c-1]
-				score += n.left.value
-			}
-
-			if c < width-1 {
-				n.right = grid[r][c+1]
-				score += n.right.value
-			}
+			score += n.up.value
+			score += n.upleft.value
+			score += n.upright.value
+			score += n.down.value
+			score += n.downleft.value
+			score += n.downright.value
+			score += n.left.value
+			score += n.right.value
 
 			if score < 4 {
 				validNodes++
@@ -110,9 +107,9 @@ func linkAndCalcNodeGrid(grid [][]*node, rm bool) int {
 					n.value = 0
 				}
 			}
-
 		}
 	}
+
 	return validNodes
 }
 
@@ -121,17 +118,17 @@ func part1(f []byte) int {
 
 	grid := createNodeGrid(f)
 
-	return linkAndCalcNodeGrid(grid, false)
+	return checkValidNodes(grid, false)
 }
 
 func part2(f []byte) int {
-	defer timeTrack(time.Now(), "part1")
+	defer timeTrack(time.Now(), "part2")
 	sum := 0
 
 	grid := createNodeGrid(f)
 
 	for {
-		add := linkAndCalcNodeGrid(grid, true)
+		add := checkValidNodes(grid, true)
 		sum += add
 
 		if add == 0 {
